@@ -12,7 +12,7 @@ classifiers = [
 
 setup(
     name='modani2x',
-    version='0.0.1',
+    version='0.0.2.3',
     description='A simple basic script to test package publications.',
     long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
     url='',  
@@ -24,6 +24,6 @@ setup(
     packages=find_packages(),
     install_requires=['torch', 'numpy','torchani'] ,
     project_urls={
-        'Source': 'https://github.com/Takshan/modani2x',
+        'Source': 'https://github.com/Takshan/mod_ani2x',
     }
 )
