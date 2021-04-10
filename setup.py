@@ -20,7 +20,7 @@ setup(
     author_email='takshan@naver.com',
     license='MIT', 
     classifiers=classifiers,
-    keywords='modani2x', 
+    keywords='mod_ani2x', 
     packages=find_packages(),
     install_requires=['torch', 'numpy','torchani'] ,
     project_urls={
