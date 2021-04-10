@@ -1,3 +1,36 @@
+import torch
+import torchani
+from ase.optimize import BFGS, LBFGS
+import numpy as np
+import glob
+from ase import Atoms, units
+from ase.io.trajectory import Trajectory
+from ase.io import read, write
+import os
+import warnings
+warnings.filterwarnings("ignore")
+from datetime import  datetime, date
+import sys
+
+
+time = datetime.now()
+date= date.today()
+
+
+ChemiToInts={'H': 1,
+             'C': 6,
+             'Fe':26,
+             'F': 9,
+             'Cl':17, 
+             'N': 7, 
+             'O': 8,
+             'S': 16
+             }
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = torchani.models.ANI2x(periodic_table_index=True).to(device)
+calculator = torchani.models.ANI2x().ase()
+
 
 class FileError(Exception):
     def __init__(self, msg):
@@ -22,7 +55,7 @@ class FileError(Exception):
 
 def printer(id, crystal_id,ligand_id, rmsd, ener):
     pid = id[:-4]    
-    with open(f"{pid}_MINI_log_minimized.txt", "a") as ani_out:  
+    with open(f"{pid}_v7_log_minimized.txt", "a") as ani_out:  
         #print(f"Today's date: {time} ", file = ani_out)
         #print("         ##############################################", file = ani_out)
         #print("         ############# RESULT #########################", file = ani_out)
@@ -113,24 +146,26 @@ def calculation(proteins, ligands):
     lig_id = ligands.lower()
     prot_id = proteins.lower()
     
-    protein = glob.glob(f"/home/lab09/Projects/ANI2x/{prot_id}/*.pdb")
-    ligand = glob.glob(f"/home/lab09/Projects/ANI2x/{prot_id}/{lig_id}")
+    ###disenable for now
     
-    crystal_path = glob.glob(f"/home/lab09/Projects/ANI2x/{prot_id}/{prot_id}*_crystal.xyz")
-    crystal_id, crystal_xyz= parser(crystal_path,True)
-    crystal = np.asarray(crystal_xyz)
+    #protein = glob.glob(f"../{prot_id}/**/{prot_id}/*.pdb")
+    #ligand = glob.glob(f"../{prot_id}/**/{prot_id}/{lig_id}")
+    
+    #crystal_path = glob.glob(f"../{prot_id}/**/{prot_id}/{prot_id}*_crystal.xyz")
+    #crystal_id, crystal_xyz= parser(crystal_path,True)
+    #crystal = np.asarray(crystal_xyz)
     
     #print(protein)
-    protein_id, protein_xyz, protein_index, protein_atoms = parser(protein)
+    protein_id, protein_xyz, protein_index, protein_atoms = parser(proteins)
     
 
 
-    ligand_id, ligand_xyz,ligand_index,ligand_atoms, ligand_heavy_xyz = parser(ligand, False)
+    ligand_id, ligand_xyz,ligand_index,ligand_atoms, ligand_heavy_xyz = parser(ligands, False)
     #atoms = Atoms(ligand_atoms, positions=ligand_xyz)  
     
-    complex_atoms = protein_atoms + ligand_atoms
-    complex_position = protein_xyz + ligand_xyz
-    atoms = Atoms(complex_atoms, positions =complex_position)
+    #complex_atoms = protein_atoms + ligand_atoms
+    #complex_position = protein_xyz + ligand_xyz
+    atoms = Atoms(ligand_atoms, positions =ligand_xyz)
 
 
 
@@ -139,12 +174,14 @@ def calculation(proteins, ligands):
     atoms.set_calculator(calculator)
     
     """Energy minimization"""
+    lig_id = os.path.basename(ligands)
+    lig_id = lig_id.rsplit(".")[0]
     
-    print("Strating minimization of ligands.......")
-    print("---------------------------------------------------------------------------")
-    opt=BFGS(atoms, trajectory="/home/lab09/Projects/ANI2x/scripts/run/minimization_dump/{}_minimization.traj".format(lig_id[:-4]))
+    #print("Strating minimization of ligands.......")
+    #print("---------------------------------------------------------------------------")
+    opt=BFGS(atoms, trajectory=f"/home/lab09/Projects/glide_verification/scripts/run/minimization_dump/{lig_id}_minimization.traj")
     opt.run(fmax=0.001,steps=1000)
-    print(atoms)
+    #print(atoms)
     
 
     '''optimized ligands'''    
@@ -174,59 +211,41 @@ def calculation(proteins, ligands):
     complex = Atoms(index_4_tensor, positions=xyz_4_tensor)
     complex.set_calculator(calculator)
     ener = ("single point energy: " + str(complex.get_potential_energy()))
+    with open(f"/home/lab09/Projects/glide_verification/scripts/result/{protein_id}_log.txt", "w") as logout:
+        print(f"{protein_id}\t {ligand_id[:-4]}\t {ener}", file = logout )
+    
+    
+    
     #print(ener)
-    optimized_xyz_array = np.asarray(optimized_xyz)
-    optimized_heavy_atoms_index = [i for i, j in enumerate(optimized_index)if j != 1]
-    optimized_heavy_atoms_xyz = (np.array(optimized_xyz_array)[optimized_heavy_atoms_index])
+    #optimized_xyz_array = np.asarray(optimized_xyz)
+    #optimized_heavy_atoms_index = [i for i, j in enumerate(optimized_index)if j != 1]
+    #optimized_heavy_atoms_xyz = (np.array(optimized_xyz_array)[optimized_heavy_atoms_index])
         
     
-    conformer=np.asarray(optimized_heavy_atoms_xyz)  
-    rmsd= rmsd_calculator(crystal, conformer)
+    #conformer=np.asarray(optimized_heavy_atoms_xyz)  
+    #rmsd= rmsd_calculator(crystal, conformer)
 
-    print('\n{}\t + \t{}==>\tRMSD: {} A'.format(crystal_id[:-4], ligand_id[:-4], rmsd))
-    print("---------------------end-----------------------------------------")
+    #print('\n{}\t + \t{}==>\tRMSD: {} A'.format(crystal_id[:-4], ligand_id[:-4], rmsd))
+    #print("---------------------end-----------------------------------------")
     
-    printer(protein_id,crystal_id[:-4], ligand_id[:-4], rmsd, ener)
+    #printer(protein_id,crystal_id[:-4], ligand_id[:-4], rmsd, ener)
     
 
 
 def main(protein, ligand):
-    import torch
-    import torchani
-    from ase.optimize import BFGS, LBFGS
-    import numpy as np
-    import glob
-    from ase import Atoms, units
-    from ase.io.trajectory import Trajectory
-    from ase.io import read, write
-    import os
-    import warnings
-    warnings.filterwarnings("ignore")
-    from datetime import  datetime, date
-    import sys
-
-    time = datetime.now()
-    date= date.today()
+    
+    """ Runs a script for analyzing protein ligand binding.
+    """
     
     
-    ChemiToInts={'H': 1,
-                 'C': 6,
-                 'Fe':26,
-                 'F': 9,
-                 'Cl':17, 
-                 'N': 7, 
-                 'O': 8,
-                 'S': 16}
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = torchani.models.ANI2x(periodic_table_index=True).to(device)
-    calculator = torchani.models.ANI2x().ase()
-
-    ligand = sys.argv[-1]
-    protein = sys.argv[-2]   
-    main(protein, ligand)
-
+    print("\n\nRuning Mod ANI_2x....................................\n\n")
+    #print(protein, ligand)
     calculation(protein, ligand)
     
     
 
+if __name__ == '__main__':
+    print("\n\nStarted Mod_ANI_2x.....................", end="\n\n")
+    ligand = sys.argv[-1]
+    protein = sys.argv[-2]
+    main(protein, ligand)
