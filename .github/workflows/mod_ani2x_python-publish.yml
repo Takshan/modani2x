@@ -4,6 +4,12 @@
 name: Upload Python Package
 
 on:
+  push:
+    - main
+  pull_request:
+    branches:
+      - main
+  page_build:
   release:
     types: [created]
 
