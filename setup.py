@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 classifiers = [
-    'Development Status :: 5 - Production/Alpha',
+    'Development Status :: 2 - Pre-Alpha',
     'Intended Audience :: Education',
-    'Operating System :: Linux :: Ubuntu :: Ubuntu 20.',
+    'Operating System :: OS Independent',
     'License :: OSI Approved :: MIT License',
     'Programming Language :: Python :: 3'
 ]
@@ -20,5 +20,8 @@ setup(
     classifiers=classifiers,
     keywords='modani2x', 
     packages=find_packages(),
-    install_requires=['torch', 'numpy','torchani'] 
+    install_requires=['torch', 'numpy','torchani'] ,
+    project_urls={
+        'Source': 'https://github.com/Takshan/modani2x',
+    }
 )
