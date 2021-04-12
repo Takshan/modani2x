@@ -8,7 +8,7 @@ import modani2x.modani2x as ani # type: ignore
 
 
 
-folder_path= "/home/lab09/Projects/glide_verification"
+folder_path= "/mnt/d/lab/Projects/glide_verification"
 
 
 def folder_search(search_type =None, target=None, crystal=False):
@@ -62,7 +62,7 @@ def main():
     count = 0
     for protein in Bar("Calculating...").iter(proteins_list):
         protein_name = give_id(protein)[:4].lower()
-        for ligand in Bar("Enumerating.....").iter(ligands_list):
+        for ligand in Bar("\nEnumerating.....").iter(ligands_list):
             ligand_name = give_id(ligand)[:4].lower()
             if protein_name == ligand_name:
                 ani.main(protein, ligand)

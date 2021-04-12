@@ -18,14 +18,14 @@ date= date.today()
 
 
 ChemiToInts={'H': 1,
-             'C': 6,
-             'Fe':26,
-             'F': 9,
-             'Cl':17, 
-             'N': 7, 
-             'O': 8,
-             'S': 16
-             }
+            'C': 6,
+            'Fe':26,
+            'F': 9,
+            'Cl':17, 
+            'N': 7, 
+            'O': 8,
+            'S': 16
+            }
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = torchani.models.ANI2x(periodic_table_index=True).to(device)
@@ -179,17 +179,17 @@ def calculation(proteins, ligands):
     
     #print("Strating minimization of ligands.......")
     #print("---------------------------------------------------------------------------")
-    opt=BFGS(atoms, trajectory=f"/home/lab09/Projects/glide_verification/scripts/run/minimization_dump/{lig_id}_minimization.traj")
+    opt=BFGS(atoms, trajectory=f"/mnt/d/lab/Projects/glide_verification/scripts/run/minimization_dump/{lig_id}_minimization.traj")
     opt.run(fmax=0.001,steps=1000)
-    #print(atoms)
     
-
+    #print(
     '''optimized ligands'''    
     
-    optimized_xyz = atoms[len(protein_atoms):].get_positions()
+    optimized_xyz = atoms.get_positions()
     optimized_index = atoms.get_atomic_numbers()
     
     
+    #print(len(optimized_xyz), len(optimized_index))
     xyz_4_tensor = protein_xyz + list(optimized_xyz)
     index_4_tensor = protein_index + list(optimized_index)
     
@@ -211,7 +211,7 @@ def calculation(proteins, ligands):
     complex = Atoms(index_4_tensor, positions=xyz_4_tensor)
     complex.set_calculator(calculator)
     ener = ("single point energy: " + str(complex.get_potential_energy()))
-    with open(f"/home/lab09/Projects/glide_verification/scripts/result/{protein_id}_log.txt", "w") as logout:
+    with open(f"/mnt/d/lab/Projects/glide_verification/scripts/result/{protein_id}_log.txt", "w") as logout:
         print(f"{protein_id}\t {ligand_id[:-4]}\t {ener}", file = logout )
     
     
