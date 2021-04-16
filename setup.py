@@ -22,7 +22,7 @@ setup(
     classifiers=classifiers,
     keywords='mod_ani2x', 
     packages=find_packages(),
-    scripts=['bin/modani2x'],
+    scripts=['modani2x'],
     install_requires=['torch', 'numpy','torchani', 'ase', 'torchani'] ,
     project_urls={
         'Source': 'https://github.com/Takshan/modani2x',
