@@ -3,5 +3,16 @@ Change Log
 
 0.0.1   (10/04/2021)    - First Release<br/>
 0.0.2.6 (12/04/2021)    - Second Release<br/>
+0.1.0   (16/04/2021)    - Third Release
 --------------------------------
+Usage information ~
 
+Input:
+  	-r [ --receptor ] arg         rigid part of the receptor (PDB)
+  	-l [ --ligand ] arg           ligand(xyz)
+  	-m [ --minimzation ] arg      BFGS/LBFGS/FIRE
+  	-s [ --steps ] arg            (optional) default: 1000
+  	-o [ --output ] arg           (optional) default: default_log.txt
+  	-v [ --verbose ] arg          (option) True/False default: False
+Information: 
+	-h [ --help ] 	              display usage summary

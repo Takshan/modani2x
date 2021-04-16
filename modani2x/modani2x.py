@@ -1,6 +1,7 @@
 import torch
+import argparse
 import torchani
-from ase.optimize import BFGS, LBFGS
+from ase.optimize import BFGS, LBFGS, FIRE, MDMin
 import numpy as np
 import glob
 from ase import Atoms, units
@@ -10,27 +11,27 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 from datetime import  datetime, date
-import sys
+import sys, getopt
+
 
 
 time = datetime.now()
 date= date.today()
 
 
+
 ChemiToInts={'H': 1,
-            'C': 6,
-            'Fe':26,
-            'F': 9,
-            'Cl':17, 
-            'N': 7, 
-            'O': 8,
-            'S': 16
-            }
+             'C': 6,
+             'Fe':26,
+             'F': 9,
+             'Cl':17, 
+             'N': 7, 
+             'O': 8,
+             'S': 16}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = torchani.models.ANI2x(periodic_table_index=True).to(device)
 calculator = torchani.models.ANI2x().ase()
-
 
 class FileError(Exception):
     def __init__(self, msg):
@@ -53,20 +54,33 @@ class FileError(Exception):
         
         
 
-def printer(id, crystal_id,ligand_id, rmsd, ener):
-    pid = id[:-4]    
-    with open(f"{pid}_v7_log_minimized.txt", "a") as ani_out:  
+def printer(id,ligand_id, ener):
+    pid = id[:-4]  
+    if not os.path.exists("run"): os.makedirs("run")  
+    with open(f"./run/{pid}_MINI_log_minimized.txt", "a") as ani_out:  
         #print(f"Today's date: {time} ", file = ani_out)
         #print("         ##############################################", file = ani_out)
         #print("         ############# RESULT #########################", file = ani_out)
         #print("         ##############################################", file = ani_out)
-        print('{}\t{}\tRMSD: {} A {}'.format(crystal_id, ligand_id, rmsd, ener), file = ani_out)
+        print(' {}\t{}\tEnergy: {}'.format(id, ligand_id,  ener), file = ani_out)
         
         
 
 
-def parser(name, crystal=True):
-    ''' path as the input'''
+def parser(name, crystal=False):
+    """A function to parse the information from molecules.
+
+    Args:
+        name (molecule): A molecule name with extension
+        crystal (bool, optional): Search for crsytal molecules with specific name consisting of *_crystal.extendion.
+        Defaults to True.
+
+    Returns:
+        id: Name of the molecules parsed.
+        xyz: xyz coordinates.
+        index: index of the atoms i.e atomic number.
+    """
+
     file = ''.join(name)
     id = os.path.basename(file)
     index =[]
@@ -117,10 +131,10 @@ def parser(name, crystal=True):
                         if i.title() in ChemiToInts:
                             index.append(ChemiToInts.get(i))
 
-            return id, xyz, index, atoms 
+            return id, xyz, index 
         
     except FileError as error:
-        error.fileformat_exception()
+        error.fileformat()
     
     
 def printenergy(a):
@@ -131,7 +145,22 @@ def printenergy(a):
         'Etot = %.3feV' % (epot, ekin, ekin / (1.5 * units.kB), epot + ekin))
         
 
+
+
+
 def rmsd_calculator(crystal, conformer):
+    """Calculates RMSD between reference and pose.
+
+    Args:
+        crystal (list): A list of xyz coordinates of coordinates
+        conformer (list): A list of xyz coordinates of pose.
+
+    Returns:
+        float: RMSD value
+    """
+    
+    
+    
     if  len(crystal) == len(conformer):
         N = len(crystal)
         diff=np.array(crystal)-np.array(conformer)
@@ -142,56 +171,96 @@ def rmsd_calculator(crystal, conformer):
     
 
 
-def calculation(proteins, ligands):    
-    lig_id = ligands.lower()
-    prot_id = proteins.lower()
+def optimization(id,xyz, atoms, ALGO, num_step):
+
+    """Energy Minimization  of small molecule
+    Args:
+        id: Name/id of the molecule.
+        xyz: xyz Coordinates of the molecules.
+        atoms: Atoms of the molecules.
+        ALGO: Name of minimization ALGOrithm to use for optimization.
+        num_step: Number of steps to perform by the optimization ALGOrithm.
+    Returns:
+        optimized_xyz: A list containing the optimized coordinates in xyz.
+        optimized_index: A list of indexes of atoms from periobic table/atomic number. 
+        
+    Note:
+        trajectory: Writes trajectory file in trajectory folder.
+        xyz: Writes minimzed xyz file in minimized folder.
+    """
     
-    ###disenable for now
-    
-    #protein = glob.glob(f"../{prot_id}/**/{prot_id}/*.pdb")
-    #ligand = glob.glob(f"../{prot_id}/**/{prot_id}/{lig_id}")
-    
-    #crystal_path = glob.glob(f"../{prot_id}/**/{prot_id}/{prot_id}*_crystal.xyz")
-    #crystal_id, crystal_xyz= parser(crystal_path,True)
-    #crystal = np.asarray(crystal_xyz)
-    
-    #print(protein)
-    protein_id, protein_xyz, protein_index, protein_atoms = parser(proteins)
-    
-
-
-    ligand_id, ligand_xyz,ligand_index,ligand_atoms, ligand_heavy_xyz = parser(ligands, False)
-    #atoms = Atoms(ligand_atoms, positions=ligand_xyz)  
-    
-    #complex_atoms = protein_atoms + ligand_atoms
-    #complex_position = protein_xyz + ligand_xyz
-    atoms = Atoms(ligand_atoms, positions =ligand_xyz)
-
-
-
-
-
+    atoms = Atoms(atoms, positions= xyz)
     atoms.set_calculator(calculator)
-    
-    """Energy minimization"""
-    lig_id = os.path.basename(ligands)
-    lig_id = lig_id.rsplit(".")[0]
-    
-    #print("Strating minimization of ligands.......")
-    #print("---------------------------------------------------------------------------")
-    opt=BFGS(atoms, trajectory=f"/home/lab09/Projects/glide_verification/scripts/run/minimization_dump/{lig_id}_minimization.traj")
-    opt.run(fmax=0.001,steps=1000)
-    
-    #print(
-    '''optimized ligands'''    
-    
+    if not os.path.exists('trajectory'): os.makedirs('trajectory')
+    if ALGO =="BFGS" : 
+        opt = BFGS(atoms, trajectory=f"./trajectory/{id}_BFGS_minimization.traj")
+    elif ALGO == "FIRE":
+        opt = FIRE(atoms, trajectory=f"./trajectory/{id}_FIRE_minimization.traj")
+    elif ALGO == "LBFGS":
+        opt = LBFGS(atoms, trajectory=f"./trajectory/{id}_LBFGS_minimization.traj")   
+    else:
+        print("Unknown minimization ALGOrithm.")
+        usage()
+        exit()
+        
+    opt.run(steps=num_step)
+    if not os.path.exists('minimized'): os.makedirs('minimized')
+    write(f"./minimized/{id}_minimized.xyz", atoms)
     optimized_xyz = atoms.get_positions()
     optimized_index = atoms.get_atomic_numbers()
+
+    return optimized_xyz, optimized_index
+
+
+
+
+def folder_search(target=None,search_type =None):
+    """Search for required file format when enter a main directory. targted file 
+    format can be used otherwise deafult searches for pdb as protein and xyz as ligand
+    Usage sample: folder_serch(search_type="mol2", taget="protein". """
+
+    files = sorted(glob.glob(f"./**/{target}.{search_type}", recursive = True)) 
+    print("Total number of files found: " + str(len(files)))
+    return files
+
+
+def calculation(protein, ligand, ALGO=False,verbose=False, steps=0, log=None):  
+
+
+    def file_format(molecule):
+        molecule_id = os.path.basename(molecule)
+        molecule_name, molecule_format = molecule_id.rsplit(".")
+        return molecule_name, molecule_format
+    
+    pid, pformat = file_format(protein)
+    lid,lformat = file_format(ligand)
     
     
-    print(len(optimized_xyz), len(optimized_index))
-    xyz_4_tensor = protein_xyz + list(optimized_xyz)
-    index_4_tensor = protein_index + list(optimized_index)
+    found_protein = folder_search(pid,pformat)
+    found_ligand = folder_search(lid, lformat)
+    print("\nStarted ......")
+
+    protein_id, protein_xyz, protein_index = parser(found_protein)
+    
+    ligand_id, ligand_xyz,ligand_index,ligand_atoms, ligand_heavy_xyz = parser(found_ligand, False)
+    
+    
+    
+    if ALGO!= False:
+        ALGOrithm = ALGO    
+        num_steps = int(steps)
+        optimized_xyz , optimized_index  = optimization(ligand_id[:-4], ligand_xyz, ligand_atoms,ALGOrithm, num_steps)
+        xyz_4_tensor = protein_xyz + list(optimized_xyz)
+        index_4_tensor = protein_index + list(optimized_index)
+        optimized_xyz_array = np.asarray(optimized_xyz)
+        optimized_heavy_atoms_index = [i for i, j in enumerate(optimized_index)if j != 1]
+        optimized_heavy_atoms_xyz = (np.array(optimized_xyz_array)[optimized_heavy_atoms_index])
+        #conformer=np.asarray(optimized_heavy_atoms_xyz)  
+    else:
+        xyz_4_tensor = protein_xyz + ligand_xyz
+        index_4_tensor = protein_index +ligand_index
+        #conformer = np.asrray(ligand_heavy_xyz)
+    
     
     #len_xyz_tensor = len(xyz_4_tensor)         
     #xyz_tensor_ = torch.FloatTensor(xyz_4_tensor)
@@ -200,52 +269,111 @@ def calculation(proteins, ligands):
     #atom_index = atom_index_.reshape(len_xyz_tensor).unsqueeze(dim=0)
     #coordinates = torch.tensor(xyz_tensor, requires_grad= True, device=device)
     #species = torch.tensor(atom_index,device=device)
-    
-    
-    
-    
-    '''non optimized structure'''
-    #xyz_4_tensor = protein_xyz + ligand_xyz
-    #index_4_tensor = protein_index + ligand_index  #index=atomic numbers
+
     
     complex = Atoms(index_4_tensor, positions=xyz_4_tensor)
     complex.set_calculator(calculator)
-    ener = ("single point energy: " + str(complex.get_potential_energy()))
-    with open(f"/home/lab09/Projects/glide_verification/scripts/result/{protein_id}_log.txt", "w") as logout:
-        print(f"{protein_id}\t {ligand_id[:-4]}\t {ener}", file = logout )
-    
-    
-    
-    #print(ener)
-    #optimized_xyz_array = np.asarray(optimized_xyz)
-    #optimized_heavy_atoms_index = [i for i, j in enumerate(optimized_index)if j != 1]
-    #optimized_heavy_atoms_xyz = (np.array(optimized_xyz_array)[optimized_heavy_atoms_index])
-        
-    
-    #conformer=np.asarray(optimized_heavy_atoms_xyz)  
+    print("calculating.....")
+    energy = complex.get_potential_energy() 
+    ener = ("single point energy: " + str(energy))
+    print(ener)
+
     #rmsd= rmsd_calculator(crystal, conformer)
 
-    #print('\n{}\t + \t{}==>\tRMSD: {} A'.format(crystal_id[:-4], ligand_id[:-4], rmsd))
-    #print("---------------------end-----------------------------------------")
-    
-    #printer(protein_id,crystal_id[:-4], ligand_id[:-4], rmsd, ener)
-    
-
-
-def main(protein, ligand):
-    
-    """ Runs a script for analyzing protein ligand binding.
-    """
-    
-    
-    print("\n\nRuning Mod ANI_2x....................................\n\n")
-    #print(protein, ligand)
-    calculation(protein, ligand)
-    
+    #if verbose == True:
+    #    print('\n{}\t + \t{}'.format(crystal_id[:-4], ligand_id[:-4]))
+    #    print("---------------------end-----------------------------------------")
+    #
+    printer(protein_id, ligand_id[:-4], energy)
     
 
-if __name__ == '__main__':
-    print("\n\nStarted Mod_ANI_2x.....................", end="\n\n")
-    ligand = sys.argv[-1]
-    protein = sys.argv[-2]
-    main(protein, ligand)
+
+
+def usage():
+    
+    print(r"""Usage information ~
+
+Input:
+  	-r [ --receptor ] arg         rigid part of the receptor (PDB)
+  	-l [ --ligand ] arg           ligand(xyz)
+  	-m [ --minimzation ] arg      BFGS/LBFGS/FIRE
+  	-s [ --steps ] arg            (optional) default: 1000
+  	-o [ --output ] arg           (optional) default: default_log.txt
+  	-v [ --verbose ] arg          (option) True/False default: False
+Information: 
+	-h [ --help ] 	              display usage summary
+  	""")
+
+    return 0
+
+
+
+def main(argv):
+
+    try:
+        ALGO = False
+        step = 1000
+        output_file = "default_log.txt"
+        verbose = False
+        ligand = ''
+        ALGORITHMS = ["BFGS", "LBFGS", "FIRE"]
+
+        opts, argv= getopt.getopt(argv,"hr:l:m:s:o:v",["receptor=","minization=", "liagnd=","steps=","output="])
+        
+
+        if len(opts) <2 and opts not in ("h", "--help"):
+            print("Error: Atleast 2 arguments is required.")
+            usage()
+            exit()
+
+        for opt, arg in opts:
+
+            if opt in ("-h", "--help"):
+                usage()
+                exit()
+
+            elif opt in ("-r", "--receptor"):
+                protein = arg
+                try:
+                    if protein[-3:].lower() == "pdb" or len(protein) > 7: #pdb_id+.pdb equals to 7 atleast
+                        pass
+                except Exception as e:    
+                    FileError.fileformat(e)
+                    exit()
+                    
+            elif opt in ("-l", "--ligand"):
+                ligand = arg
+                
+                try:
+                    if ligand[-3:].lower() == "xyz" or len(ligand) > 5:
+                        pass #something+.pdb equals to 5 atleast
+                    
+                except Exception as e:   
+                    FileError.fileformat(e)
+                    exit()
+            
+            elif opt in ("-m", "--minimzation") and arg in ALGORITHMS:
+                ALGO = arg
+            
+            elif opt in ("-s", "--steps"):
+                    step = int(arg)
+            
+            elif opt in ("-o", "--output"): 
+                output_file = arg
+
+            elif opt in ("-v", "--verbose"):
+                verbose = True
+
+            else:
+                assert False, f"unhandled option: {opt}" 
+
+    except getopt.GetoptError as err:
+        print(err)
+        print ("\nUse --help option to view usage information.")
+        sys.exit(2)    
+    
+
+    calculation(protein, ligand, ALGO, verbose = verbose, steps= step, log =output_file)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
