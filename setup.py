@@ -12,7 +12,7 @@ classifiers = [
 
 setup(
     name='modani2x',
-    version='0.2.3.1.1.2',
+    version='0.2.3.1.1.3',
     description='A simple basic script to test package publications.',
     long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
     url='',  
