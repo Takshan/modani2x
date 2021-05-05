@@ -296,9 +296,10 @@ Information:
 
 
 
-def main(*argv):
+def main():
     
     try:
+        argv= sys.argv[1:]
         ALGO = False
         step = 1000
         output_file = "default_log.txt"
