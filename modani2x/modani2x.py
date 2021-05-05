@@ -296,7 +296,7 @@ Information:
 
 
 
-def main(argv):
+def main(*argv):
     
     try:
         ALGO = False
@@ -306,7 +306,7 @@ def main(argv):
         ligand = ''
         ALGORITHMS = ["BFGS", "LBFGS", "FIRE"]
 
-        opts, argv= getopt.getopt(argv,"hr:l:m:s:o:v",["receptor=","minization=", "liagnd=","steps=","output="])
+        opts, argv= getopt.getopt(*argv,"hr:l:m:s:o:v",["receptor=","minization=", "liagnd=","steps=","output="])
         
 
         if len(opts) <2 and opts not in ("h", "--help"):
