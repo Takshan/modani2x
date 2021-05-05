@@ -51,21 +51,6 @@ class FileError(Exception):
     
     
     
-        
-        
-
-def printer(id,ligand_id, ener):
-    pid = id[:-4]  
-    if not os.path.exists("run"): os.makedirs("run")  
-    with open(f"./run/{pid}_MINI_log_minimized.txt", "a") as ani_out:  
-        #print(f"Today's date: {time} ", file = ani_out)
-        #print("         ##############################################", file = ani_out)
-        #print("         ############# RESULT #########################", file = ani_out)
-        #print("         ##############################################", file = ani_out)
-        print(' {}\t{}\tEnergy: {}'.format(id, ligand_id,  ener), file = ani_out)
-        
-        
-
 
 def parser(name, crystal=False):
     """A function to parse the information from molecules.
