@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     console_scripts =
         ["modani2x = modani2x.modani2x"],
-    scripts=['modani2x'],
+    scripts=['modani2x/modani2x'],
     install_requires=['torch', 'numpy','torchani', 'ase', 'torchani'] ,
     project_urls={
         'Source': 'https://github.com/Takshan/modani2x',
