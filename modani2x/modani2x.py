@@ -205,8 +205,8 @@ def folder_search(target=None,search_type =None):
     Usage sample: folder_serch(search_type="mol2", taget="protein". """
 
     files = sorted(glob.glob(f"./**/{target}.{search_type}", recursive = True)) 
-    print("Total number of files found: " + str(len(files)))
-    return files
+    out_result_print= ("Total number of files found: " + str(len(files)))
+    return files, out_result_print
 
 
 def calculation(protein, ligand, ALGO=False,verbose=False, steps=0, log=None):  
@@ -221,8 +221,11 @@ def calculation(protein, ligand, ALGO=False,verbose=False, steps=0, log=None):
     lid,lformat = file_format(ligand)
     
     
-    found_protein = folder_search(pid,pformat)
-    found_ligand = folder_search(lid, lformat)
+    found_protein, protein_out_print = folder_search(pid,pformat)
+    found_ligand, ligand_out_print = folder_search(lid, lformat)
+    print(f"Protein: {protein_out_print}")
+    print(f"Ligand: {ligand_out_print}")
+
     print("\nStarted ......")
 
     protein_id, protein_xyz, protein_index = parser(found_protein)
@@ -258,7 +261,7 @@ def calculation(protein, ligand, ALGO=False,verbose=False, steps=0, log=None):
     
     complex = Atoms(index_4_tensor, positions=xyz_4_tensor)
     complex.set_calculator(calculator)
-    print("calculating.....")
+    print(f"calculating.....Pleae be patient.")
     energy = complex.get_potential_energy() 
     ener = ("single point energy: " + str(energy))
     print(ener)
@@ -294,7 +297,7 @@ Information:
 
 
 def main(argv):
-
+    
     try:
         ALGO = False
         step = 1000
@@ -359,6 +362,7 @@ def main(argv):
     
 
     calculation(protein, ligand, ALGO, verbose = verbose, steps= step, log =output_file)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
