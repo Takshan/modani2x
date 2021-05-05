@@ -20,11 +20,10 @@ setup(
     author_email='takshan@naver.com',
     license='MIT', 
     classifiers=classifiers,
-    keywords='mod_ani2x', 
+    keywords='modani2x', 
     packages=find_packages(),
     console_scripts =
         ["modani2x = modani2x.modani2x"],
-    scripts=['modani2x/modani2x'],
     install_requires=['torch', 'numpy','torchani', 'ase', 'torchani'] ,
     project_urls={
         'Source': 'https://github.com/Takshan/modani2x',
