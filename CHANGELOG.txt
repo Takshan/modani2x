@@ -4,6 +4,7 @@ Change Log
 0.0.1   (10/04/2021)    - First Release<br/>
 0.0.2.6 (12/04/2021)    - Second Release<br/>
 0.1.0   (16/04/2021)    - Third Release
+0.5
 --------------------------------
 Usage information ~
 
