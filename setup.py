@@ -12,7 +12,7 @@ classifiers = [
 
 setup(
     name='modani2x',
-    version='0.2.2',
+    version='0.2.3',
     description='A simple basic script to test package publications.',
     long_description=open('README.md').read() + '\n\n' + open('CHANGELOG.txt').read(),
     url='',  
@@ -23,7 +23,7 @@ setup(
     keywords='modani2x', 
     packages=find_packages(),
     entry_points = {
-        'console_scripts':["modani2x = modani2x.modani2x:main"],
+        'console_scripts':["modani2x = modani2x.modani2x"],
 
     },    
     install_requires=['torch', 'numpy','torchani', 'ase', 'torchani'] ,
