@@ -1,1 +1,1 @@
-A simple script to run AN2X for protein and ligand bind scoring. Its a pre Alpha stage to test about publishing package so the package might be broken cause caution while using it.
+A simple script to run AN2X for protein and ligand bind scoring. I
